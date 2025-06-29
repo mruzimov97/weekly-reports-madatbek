@@ -1,0 +1,94 @@
+# SQL Query: Sales Funnel Conversion Analysis
+
+## Objective
+Analyze how users move through a sales funnel on a website or app — from viewing a product, to adding it to the cart, to completing a purchase. Measure the time taken between each step and identify where users drop off.
+
+## Schema
+
+'''
+CREATE TABLE funnel_events (
+    event_id SERIAL,
+    user_id INT,
+    event_name VARCHAR(50),  -- values('view_product', 'add_to_cart', 'purchase')
+    event_time TIMESTAMP
+);
+'''
+
+## Sample Data
+'''
+INSERT INTO funnel_events (user_id, event_name, event_time) VALUES
+(1, 'view_product', '2025-01-01 09:00:00'),
+(1, 'add_to_cart', '2025-01-01 09:05:00'),
+(1, 'purchase', '2025-01-01 09:10:00'),
+(2, 'view_product', '2025-01-01 10:00:00'),
+(2, 'add_to_cart', '2025-01-01 10:02:00'),
+(3, 'view_product', '2025-01-01 11:00:00');
+'''
+
+## SQL Code
+'''sql
+WITH OrderedEvents AS (
+    SELECT *,
+           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_time) AS step_num
+    FROM funnel_events
+),
+Pivoted AS (
+    SELECT
+        user_id,
+        MAX(CASE WHEN event_name = 'view_product' THEN event_time END) AS view_time,
+        MAX(CASE WHEN event_name = 'add_to_cart' THEN event_time END) AS cart_time,
+        MAX(CASE WHEN event_name = 'purchase' THEN event_time END) AS purchase_time
+    FROM OrderedEvents
+    GROUP BY user_id
+)
+SELECT *,
+       EXTRACT(EPOCH FROM cart_time - view_time)/60 AS view_to_cart_min,
+       EXTRACT(EPOCH FROM purchase_time - cart_time)/60 AS cart_to_purchase_min
+FROM Pivoted;
+'''
+
+## Explanation
+
+- 'OrderedEvents': Adds 'step_num' using 'ROW_NUMBER()' to order each user's events chronologically.
+- 'Pivoted': Converts events into columns using conditional aggregation via 'MAX(CASE WHEN ...)'.
+- Final SELECT: Calculates time differences in minutes between steps using 'EXTRACT(EPOCH ...) / 60'.
+
+## Sample Output
+
+| user_id | view_time           | cart_time           | purchase_time       | view_to_cart_min | cart_to_purchase_min |
+|---------|---------------------|---------------------|---------------------|------------------|----------------------|
+| 1       | 2025-01-01 09:00:00 | 2025-01-01 09:05:00 | 2025-01-01 09:10:00 | 5.0              | 5.0                  |
+| 2       | 2025-01-01 10:00:00 | 2025-01-01 10:02:00 | NULL                | 2.0              | NULL                 |
+| 3       | 2025-01-01 11:00:00 | NULL                | NULL                | NULL             | NULL                 |
+
+## Highlights
+
+-  CTEs ('WITH OrderedEvents', 'Pivoted')
+-  Window Function ('ROW_NUMBER()')
+-  NULL Handling (missing stages become NULLs)
+-  Analytical Use Case: Conversion tracking
+-  Add index: 'CREATE INDEX idx_user_time ON funnel_events(user_id, event_time);' to optimize
+
+## Use Case
+Ideal for e-commerce or SaaS platforms analyzing funnel effectiveness and user engagement drop-off points.
+
+---
+
+## Performance Considerations
+
+### Small Datasets
+- Fast with minimal optimization
+- Efficient use of 'MAX(CASE WHEN...)' and window functions
+
+### Larger Datasets
+- May require optimization if funnel_events exceeds 100k+ rows
+
+### Index Recommendations
+'''
+CREATE INDEX idx_funnel_user_time ON funnel_events(user_id, event_time);
+'''
+- This helps with partitioning and ordering in 'ROW_NUMBER()' and filtering
+
+### EXPLAIN Observations
+- Look for 'WindowAgg' or 'HashAggregate'
+- Avoid full table scan with proper indexing
