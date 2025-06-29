@@ -1,5 +1,109 @@
+#176. Second Highest Salary
 SELECT
   (SELECT DISTINCT salary
    FROM Employee
    ORDER BY salary DESC
    OFFSET 1 LIMIT 1) AS SecondHighestSalary;
+
+#177. Nth Highest Salary
+CREATE FUNCTION getNthHighestSalary(@N INT) RETURNS INT AS
+BEGIN
+    RETURN (
+        /* Write your T-SQL query statement below. */
+        SELECT Salary
+    FROM (
+        SELECT DISTINCT Salary,
+               DENSE_RANK() OVER (ORDER BY Salary DESC) AS rnk
+        FROM Employee
+    ) ranked
+    WHERE rnk = @N
+    );
+END
+
+#178. Rank Scores
+SELECT
+  score,
+  DENSE_RANK() OVER (ORDER BY score DESC) AS 'rank'
+FROM Scores
+ORDER BY score DESC;
+
+#185. Department Top Three Salaries
+;with cte as (
+    Select 
+    id, 
+    name, 
+    salary, 
+    departmentId, 
+    Dense_rank() over(partition by departmentId order by salary desc) as rn  
+from Employee)
+Select d.name as Department, c.name as Employee, c.salary
+from cte as c
+join Department as d
+on c.departmentId = d.id
+where c.rn <=3
+
+#180. Consecutive Numbers
+SELECT DISTINCT l1.num as ConsecutiveNums
+FROM Logs l1
+JOIN Logs l2 ON l1.id = l2.id - 1
+JOIN Logs l3 ON l2.id = l3.id - 1
+WHERE l1.num = l2.num AND l2.num = l3.num;
+
+#184. Department Highest Salary
+SELECT d.name AS Department,
+       e.name AS Employee,
+       e.salary AS Salary
+FROM Employee e
+JOIN Department d ON e.departmentId = d.id
+WHERE e.salary = (
+    SELECT MAX(salary)
+    FROM Employee
+    WHERE departmentId = e.departmentId
+);
+
+#1321. Restaurant Growth
+SELECT visited_on, amount, average_amount 
+FROM (SELECT DISTINCT visited_on, SUM(amount) OVER
+ (ORDER BY visited_on RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW) AS amount,
+  ROUND(SUM(amount) OVER (ORDER BY visited_on RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW)/7,2)
+   AS average_amount
+FROM Customer) as whole_totals
+WHERE DATEDIFF(visited_on, (SELECT MIN(visited_on) FROM Customer)) >= 6
+
+#602. Friend Requests II: Who Has the Most Friends
+;with cte as
+(select
+    ra1.requester_id [id]
+from RequestAccepted ra1
+union all
+select ra1.accepter_id [id]
+from RequestAccepted ra1)
+select top 1 c.id, count(1) [num]
+from cte c
+group by c.id
+order by num desc
+
+
+#585. Investments in 2016
+Select round(SUM(tiv_2016),2) AS tiv_2016
+from
+(select *,
+COUNT(*) over(partition by tiv_2015) as cnt1,
+COUNT(*) over(partition by lat, lon) AS cnt2
+from insurance
+) as table
+where cnt1 > =2 and cnt2 =1
+
+DECLARE @max INT = (SELECT COUNT(1) FROM Seat);
+DECLARE @flag BIT = CASE WHEN @max % 2 = 1 THEN 1 ELSE 0 END;
+
+#626. Exchange Seats
+SELECT
+    CASE 
+        WHEN @flag = 1 AND s1.id = @max THEN s1.id
+        WHEN s1.id % 2 = 1 THEN s1.id + 1
+        ELSE s1.id - 1
+    END AS id,
+    s1.student
+FROM Seat s1
+ORDER BY id;
