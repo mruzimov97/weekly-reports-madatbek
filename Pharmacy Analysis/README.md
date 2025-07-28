@@ -64,8 +64,4 @@ After execution, the script generates the following reports in the `output/` dir
 
 
 
----
-
-**Author:** Max Ruzimov\
-**Contact:** [max.ruzimov@gmail.com](mailto\:max.ruzimov@gmail.com)
 
