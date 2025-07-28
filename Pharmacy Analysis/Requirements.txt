@@ -1,0 +1,29 @@
+# Required Python Libraries for Pharmacy Analysis Project
+
+# Apache Spark for distributed data processing
+pyspark
+
+# Data manipulation and analysis
+pandas
+numpy
+
+# Command-line argument parsing
+argparse
+
+# JSON processing
+json
+
+# Logging for debugging and monitoring
+logging
+
+# File handling and system operations
+os
+pathlib
+glob
+
+# Handling date and time
+datetime
+
+# Collections for optimized data processing
+collections
+
