@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head><title>Databricks Notebook Export</title></head>
+<body>
+<h1>Databricks Notebook: Spark SQL & Transformations</h1>
+
+<h2>1. Load Dataset</h2>
+<pre><code>
+df = spark.read.csv("sample_dataset.csv", header=True, inferSchema=True)
+df.show()
+</code></pre>
+
+<h2>2. Simple SQL Queries in PySpark</h2>
+<pre><code>
+df.createOrReplaceTempView("people")
+spark.sql("SELECT * FROM people WHERE age > 30").show()
+spark.sql("SELECT AVG(salary) FROM people").show()
+</code></pre>
+
+<h2>3. Join Operation</h2>
+<pre><code>
+departments = spark.createDataFrame([
+  (1, "HR"), (2, "Engineering"), (3, "Marketing"), (4, "Finance")
+], ["id", "department"])
+df.join(departments, on="id").show()
+</code></pre>
+
+<h2>4. Dataset Transformation</h2>
+<pre><code>
+filtered = df.filter(df.age > 30)
+transformed = filtered.withColumn("salary_plus_bonus", df.salary * 1.1)
+transformed.show()
+</code></pre>
+
+<h2>5. Advanced SQL Tasks</h2>
+<pre><code>
+-- Join and add department
+SELECT p.*, d.department
+FROM people p
+JOIN departments d ON p.id = d.id;
+
+-- Rank within department
+SELECT *,
+       RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+FROM people_with_dept;
+
+-- High salary departments
+SELECT department
+FROM people_with_dept
+GROUP BY department
+HAVING SUM(salary) > 100000;
+
+-- Average salary by department for age > 30
+SELECT department, AVG(salary) AS avg_salary
+FROM people_with_dept
+WHERE age > 30
+GROUP BY department;
+</code></pre>
+
+</body>
+</html>
