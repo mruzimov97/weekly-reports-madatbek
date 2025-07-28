@@ -1,0 +1,5 @@
+id,name,email,age
+1,Alice,alice@email.com,25.0
+2,Bob,bob@email.com,30.0
+3,Charlie,,
+4,,diana@email.com,45.0
